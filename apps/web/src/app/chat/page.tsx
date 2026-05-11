@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Shell } from '@/components/Shell';
 import { apiClient } from '@/lib/api';
 
 type Message = {
@@ -76,6 +77,7 @@ export default function ChatPage() {
   }
 
   return (
+    <Shell>
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <h1 className="text-2xl font-bold mb-4">Asistente IA</h1>
 
@@ -115,9 +117,13 @@ export default function ChatPage() {
                   ? 'bg-brand text-white rounded-br-md'
                   : 'bg-slate-100 text-slate-800 rounded-bl-md'
               }`}
-            >
-              {msg.content}
-            </div>
+              dangerouslySetInnerHTML={{
+                __html: msg.content
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                  .replace(/\n/g, '<br/>'),
+              }}
+            />
           </div>
         ))}
 
@@ -157,5 +163,6 @@ export default function ChatPage() {
         </button>
       </form>
     </div>
+    </Shell>
   );
 }
