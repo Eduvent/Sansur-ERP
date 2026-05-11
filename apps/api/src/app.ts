@@ -14,14 +14,27 @@ import { errorHandler } from './middleware/errorHandler.js';
 export function createApp() {
   const app = express();
 
-  // CORS — acepta una lista de origenes separados por coma. Permite curl/postman (sin origen).
+  // CORS — acepta una lista de origenes separados por coma.
+  // Soporta wildcards: "https://*.vercel.app" matchea cualquier subdominio.
+  // Permite curl/postman (sin origen).
   const allowed = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+
+  function isOriginAllowed(origin: string): boolean {
+    return allowed.some((pattern) => {
+      if (pattern.includes('*')) {
+        const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*');
+        return new RegExp(`^${escaped}$`).test(origin);
+      }
+      return pattern === origin;
+    });
+  }
+
   app.use(helmet());
   app.use(
     cors({
       origin: (origin, cb) => {
         if (!origin) return cb(null, true);
-        if (allowed.includes(origin)) return cb(null, true);
+        if (isOriginAllowed(origin)) return cb(null, true);
         return cb(new Error(`CORS: origen ${origin} no permitido`));
       },
       credentials: true,
