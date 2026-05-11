@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  // PORT es la convencion de PaaS (Render, Heroku, Fly). API_PORT es nuestro fallback local.
+  PORT: z.coerce.number().optional(),
   API_PORT: z.coerce.number().default(4000),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET debe tener al menos 16 caracteres'),
   JWT_EXPIRES_IN: z.string().default('8h'),
@@ -17,4 +19,8 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+// Render/Heroku setean PORT — si esta presente, gana sobre API_PORT
+export const env = {
+  ...parsed.data,
+  API_PORT: parsed.data.PORT ?? parsed.data.API_PORT,
+};
