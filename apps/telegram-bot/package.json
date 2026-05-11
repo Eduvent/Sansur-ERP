@@ -6,12 +6,14 @@
   "main": "dist/bot.js",
   "scripts": {
     "dev": "tsx watch src/bot.ts",
-    "build": "tsc",
-    "start": "node dist/bot.js"
+    "build": "echo 'Bot uses tsx at runtime'",
+    "start": "tsx src/bot.ts"
   },
   "dependencies": {
     "@sansur/database": "*",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "grammy": "^1.42.0",
+    "openai": "^6.37.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

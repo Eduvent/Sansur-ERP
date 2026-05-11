@@ -9,6 +9,7 @@ import inventoryRoutes from './routes/inventory.routes.js';
 import kardexRoutes from './routes/kardex.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import suppliersRoutes from './routes/suppliers.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -51,6 +52,7 @@ export function createApp() {
   app.use('/api/kardex', kardexRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/suppliers', suppliersRoutes);
+  app.use('/api/chat', chatRoutes);
 
   app.use(errorHandler);
 

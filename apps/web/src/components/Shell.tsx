@@ -14,6 +14,7 @@ const NAV: ReadonlyArray<{ href: string; label: string; roles: NavRole[] }> = [
   { href: '/ingresos', label: 'Ingresos', roles: ['ADMIN'] },
   { href: '/ajustes', label: 'Ajustes', roles: ['ADMIN'] },
   { href: '/kardex', label: 'Kardex', roles: ['ADMIN', 'VENDEDOR'] },
+  { href: '/chat', label: 'Asistente IA', roles: ['ADMIN', 'VENDEDOR'] },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
