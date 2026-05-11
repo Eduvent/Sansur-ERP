@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sansur-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sansur
+      POSTGRES_PASSWORD: sansur
+      POSTGRES_DB: sansur_erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - sansur_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sansur -d sansur_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sansur_pgdata:

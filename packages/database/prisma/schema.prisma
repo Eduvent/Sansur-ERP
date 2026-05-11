@@ -1,0 +1,135 @@
+// Schema de la base de datos de SANSUR ERP
+// Modelado en base a las HU del backlog (US01-US18, TS01)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  VENDEDOR
+}
+
+enum MovementType {
+  ENTRADA      // US08 — ingreso de mercaderia
+  SALIDA       // US09 — venta
+  AJUSTE       // US10 — merma / correcion
+  DEVOLUCION   // US17 — devolucion de venta
+}
+
+enum AdjustmentReason {
+  DANIO
+  ROBO
+  ERROR_PREVIO
+  CONTEO_FISICO
+  OTRO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(VENDEDOR)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  movements Movement[]
+  sales     Sale[]
+
+  @@map("users")
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  ruc       String?  @unique
+  phone     String?
+  email     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movements Movement[]
+
+  @@map("suppliers")
+}
+
+// Catalogo de ventiladores — US03/US04/US05
+model Product {
+  id            String   @id @default(cuid())
+  sku           String   @unique
+  name          String
+  brand         String
+  description   String?
+  category      String?   // ej: "techo", "pie", "pared", "mesa"
+  power         Int?      // potencia en Watts
+  price         Decimal  @db.Decimal(10, 2)
+  stock         Int      @default(0)
+  minStock      Int      @default(5)   // US12 — punto de reorden
+  active        Boolean  @default(true) // US05 — soft delete
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  movements MovementItem[]
+
+  @@map("products")
+  @@index([brand])
+  @@index([category])
+}
+
+// Kárdex — US13. Registra cada movimiento (cabecera)
+model Movement {
+  id          String       @id @default(cuid())
+  type        MovementType
+  reason      AdjustmentReason?
+  note        String?
+  supplierId  String?
+  supplier    Supplier?    @relation(fields: [supplierId], references: [id])
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  saleId      String?      @unique
+  sale        Sale?        @relation(fields: [saleId], references: [id])
+  createdAt   DateTime     @default(now())
+
+  items MovementItem[]
+
+  @@map("movements")
+  @@index([type])
+  @@index([createdAt])
+}
+
+model MovementItem {
+  id         String   @id @default(cuid())
+  movementId String
+  movement   Movement @relation(fields: [movementId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int       // entradas positivas, salidas tambien positivas (la direccion la da Movement.type)
+  unitPrice  Decimal? @db.Decimal(10, 2)
+
+  @@map("movement_items")
+  @@index([productId])
+}
+
+// US09 — venta agregada. La salida real al stock se hace via Movement(type=SALIDA)
+model Sale {
+  id            String   @id @default(cuid())
+  receiptNumber String   @unique
+  total         Decimal  @db.Decimal(10, 2)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  cancelled     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  movement Movement?
+
+  @@map("sales")
+  @@index([createdAt])
+}
