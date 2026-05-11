@@ -15,6 +15,26 @@ type AuthContext = {
 const Ctx = createContext<AuthContext | null>(null);
 
 const PUBLIC_ROUTES = ['/login'];
+const SESSION_COOKIE = 'sansur_has_session';
+
+function setSessionCookie() {
+  if (typeof document === 'undefined') return;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${SESSION_COOKIE}=1; Path=/; Max-Age=86400; SameSite=Lax${secure}`;
+}
+
+function clearSessionCookie() {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+function FullScreenLoader() {
+  return (
+    <div className="flex h-screen items-center justify-center text-slate-500">
+      Cargando...
+    </div>
+  );
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -23,26 +43,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const token = localStorage.getItem('sansur_token');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('sansur_token') : null;
     if (!token) {
+      clearSessionCookie();
       setLoading(false);
       return;
     }
     apiClient
       .get<AuthUser>('/api/auth/me')
-      .then(setUser)
-      .catch(() => localStorage.removeItem('sansur_token'))
+      .then((u) => {
+        setUser(u);
+        setSessionCookie();
+      })
+      .catch(() => {
+        localStorage.removeItem('sansur_token');
+        clearSessionCookie();
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+
   useEffect(() => {
     if (loading) return;
-    if (!user && !PUBLIC_ROUTES.includes(pathname)) {
+    if (!user && !isPublicRoute) {
       router.replace('/login');
-    } else if (user && pathname === '/login') {
+    } else if (user && isPublicRoute) {
       router.replace('/');
     }
-  }, [user, loading, pathname, router]);
+  }, [user, loading, isPublicRoute, router]);
 
   async function login(email: string, password: string) {
     const data = await apiClient.post<{ token: string; user: AuthUser }>(
@@ -50,17 +80,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { email, password }
     );
     localStorage.setItem('sansur_token', data.token);
+    setSessionCookie();
     setUser(data.user);
     router.replace('/');
   }
 
   function logout() {
     localStorage.removeItem('sansur_token');
+    clearSessionCookie();
     setUser(null);
     router.replace('/login');
   }
 
-  return <Ctx.Provider value={{ user, loading, login, logout }}>{children}</Ctx.Provider>;
+  const ctxValue = { user, loading, login, logout };
+
+  if (loading) {
+    return <Ctx.Provider value={ctxValue}><FullScreenLoader /></Ctx.Provider>;
+  }
+
+  if (!user && !isPublicRoute) {
+    return <Ctx.Provider value={ctxValue}><FullScreenLoader /></Ctx.Provider>;
+  }
+
+  if (user && isPublicRoute) {
+    return <Ctx.Provider value={ctxValue}><FullScreenLoader /></Ctx.Provider>;
+  }
+
+  return <Ctx.Provider value={ctxValue}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

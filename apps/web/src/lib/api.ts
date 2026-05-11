@@ -25,6 +25,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
 
+  if (res.status === 401 && typeof window !== 'undefined') {
+    localStorage.removeItem('sansur_token');
+    document.cookie = 'sansur_has_session=; Path=/; Max-Age=0; SameSite=Lax';
+  }
+
   if (!res.ok) {
     throw new ApiError(
       res.status,
