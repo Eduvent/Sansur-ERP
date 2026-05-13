@@ -3,34 +3,194 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --paper: 246 242 231;
+    --ink: 15 20 16;
+    --cobalt: 31 58 82;
+    --ember: 200 74 31;
+    --rule: 15 20 16;
+    color-scheme: light;
+  }
+
   html, body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv11', 'tnum';
+  }
+
+  body {
+    background-color: #F6F2E7;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(15, 20, 16, 0.08) 1px, transparent 0);
+    background-size: 22px 22px;
+    background-position: 0 0;
+  }
+
+  ::selection {
+    background: #0F1410;
+    color: #F6F2E7;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  /* Tabular numerals everywhere by default for ERP precision */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
+  /* ─── Buttons ───────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[12px] font-medium uppercase tracking-widest2 transition-all focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed;
+    border: 1px solid rgb(var(--ink));
   }
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-dark focus:ring-brand;
+    @apply btn bg-ink text-paper hover:bg-ember hover:border-ember;
   }
   .btn-secondary {
-    @apply btn bg-white text-slate-800 border border-slate-300 hover:bg-slate-100;
+    @apply btn bg-transparent text-ink hover:bg-ink hover:text-paper;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700;
+    @apply btn bg-ember text-paper border-ember hover:bg-ember-600;
   }
+  .btn-ghost {
+    @apply inline-flex items-center gap-1 text-[11px] uppercase tracking-widest2 text-ink-500 hover:text-ember transition-colors;
+  }
+
+  /* ─── Inputs ────────────────────────────────────────────── */
   .input {
-    @apply w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand;
+    @apply w-full bg-transparent px-0 py-2 text-sm text-ink placeholder:text-ink-300 focus:outline-none;
+    border: 0;
+    border-bottom: 1px solid rgba(15, 20, 16, 0.25);
+    border-radius: 0;
+    transition: border-color 0.18s ease;
   }
+  .input:focus {
+    border-bottom-color: #0F1410;
+  }
+  .input-boxed {
+    @apply w-full bg-paper-50 px-3 py-2.5 text-sm text-ink placeholder:text-ink-300 focus:outline-none;
+    border: 1px solid rgba(15, 20, 16, 0.2);
+    border-radius: 0;
+  }
+  .input-boxed:focus {
+    border-color: #0F1410;
+    box-shadow: 0 0 0 1px #0F1410 inset;
+  }
+  select.input, select.input-boxed {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%230F1410' stroke-width='1.2' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.1rem center;
+    padding-right: 1.25rem;
+  }
+
+  /* ─── Cards / Surfaces ──────────────────────────────────── */
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply bg-paper-50 p-6;
+    border: 1px solid rgba(15, 20, 16, 0.12);
+    border-radius: 0;
+    box-shadow: 0 1px 0 rgba(15, 20, 16, 0.04);
+  }
+  .card-bare {
+    @apply bg-paper-50 p-0;
+    border: 1px solid rgba(15, 20, 16, 0.12);
+    border-radius: 0;
+  }
+
+  /* ─── Editorial table ───────────────────────────────────── */
+  .ed-table {
+    @apply w-full text-sm;
+    border-collapse: collapse;
+  }
+  .ed-table thead th {
+    @apply px-4 py-3 text-left text-[10px] font-medium uppercase tracking-widest2 text-ink-500;
+    border-bottom: 1px solid rgba(15, 20, 16, 0.6);
+  }
+  .ed-table tbody td {
+    @apply px-4 py-3.5 align-middle text-ink;
+    border-bottom: 1px solid rgba(15, 20, 16, 0.08);
+  }
+  .ed-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .ed-table tbody tr:hover td {
+    background-color: rgba(15, 20, 16, 0.03);
   }
   .table-th {
-    @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-600;
+    @apply px-4 py-3 text-left text-[10px] font-medium uppercase tracking-widest2 text-ink-500;
   }
   .table-td {
-    @apply px-3 py-2 text-sm text-slate-700;
+    @apply px-4 py-3 text-sm text-ink;
+  }
+
+  /* ─── Editorial typography helpers ──────────────────────── */
+  .display-italic {
+    @apply font-display italic font-normal text-ink;
+    letter-spacing: -0.01em;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[10px] uppercase tracking-widest2 text-ink-500;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 1.5rem;
+    height: 1px;
+    background-color: currentColor;
+    display: inline-block;
+  }
+  .mono-num {
+    @apply font-mono tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* ─── Stamps (status badges) ────────────────────────────── */
+  .stamp {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-widest2;
+    border: 1px solid currentColor;
+    border-radius: 0;
+  }
+  .stamp-ember { @apply stamp text-ember; }
+  .stamp-moss  { @apply stamp text-moss; }
+  .stamp-cobalt{ @apply stamp text-cobalt; }
+  .stamp-ink   { @apply stamp text-ink; }
+
+  /* ─── Decorative rules ──────────────────────────────────── */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(to right, rgba(15,20,16,0.6) 0%, rgba(15,20,16,0.6) 100%);
+  }
+  .double-rule {
+    border-top: 1px solid rgba(15, 20, 16, 0.6);
+    border-bottom: 1px solid rgba(15, 20, 16, 0.6);
+    padding: 0.25rem 0;
+  }
+  .dotted-rule {
+    border-top: 1px dotted rgba(15, 20, 16, 0.35);
+  }
+
+  /* ─── Tag (filter chips) ────────────────────────────────── */
+  .tag {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-widest2 transition;
+    border: 1px solid rgba(15, 20, 16, 0.2);
+    background: transparent;
+  }
+  .tag:hover { @apply border-ink; }
+  .tag-active {
+    @apply tag bg-ink text-paper border-ink;
+  }
+}
+
+@layer utilities {
+  .grain::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }

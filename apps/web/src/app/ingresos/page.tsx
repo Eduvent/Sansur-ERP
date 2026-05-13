@@ -33,13 +33,16 @@ export default function StockInPage() {
     setRows((r) => r.filter((_, i) => i !== idx));
   }
 
+  const totalUnits = rows.reduce((s, r) => s + (r.quantity || 0), 0);
+  const totalCost = rows.reduce((s, r) => s + (r.quantity || 0) * (r.unitPrice || 0), 0);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
     const items = rows.filter((r) => r.productId && r.quantity > 0);
     if (items.length === 0) {
-      setError('Agrega al menos un producto');
+      setError('Agregue al menos un producto');
       return;
     }
     try {
@@ -58,92 +61,179 @@ export default function StockInPage() {
     }
   }
 
+  const supplierName = suppliers.find(s => s.id === supplierId)?.name;
+
   return (
     <Shell>
-      <h1 className="text-2xl font-bold mb-1">Registrar Ingreso de Mercaderia</h1>
-      <p className="text-sm text-slate-500 mb-6">Suma unidades al stock al recibir productos del proveedor</p>
+      <header className="mb-10">
+        <div className="flex items-baseline justify-between mb-3">
+          <span className="eyebrow">Sección IV · Mercadería</span>
+          <span className="mono-num text-[10px] uppercase tracking-widest2 text-ink-500">
+            Acta de recepción
+          </span>
+        </div>
+        <div className="double-rule">
+          <h1 className="font-display text-[72px] leading-[0.95] tracking-tight text-ink py-1">
+            Registro <span className="italic text-ember">de ingreso.</span>
+          </h1>
+        </div>
+        <p className="font-display italic text-lg text-ink-500 mt-3 max-w-2xl">
+          Levante el acta cuando la mercadería entre al almacén — suma al stock y queda en el kárdex.
+        </p>
+      </header>
 
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="card grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={onSubmit}>
+        {/* CABECERA */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-8 pb-8 border-b border-ink/15">
           <div>
-            <label className="text-xs text-slate-600">Proveedor</label>
-            <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-              <option value="">— Sin proveedor —</option>
+            <label className="block text-[10px] uppercase tracking-widest2 text-ink-500 mb-2">
+              Proveedor
+            </label>
+            <select className="input text-xl font-display italic" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <option value="" className="italic">— Sin proveedor —</option>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
+            {supplierName && (
+              <div className="text-xs text-ink-500 mt-2">
+                Acta dirigida a: <span className="font-display text-base text-ink italic">{supplierName}</span>
+              </div>
+            )}
           </div>
           <div>
-            <label className="text-xs text-slate-600">Observacion</label>
-            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Lote, factura, etc..." />
+            <label className="block text-[10px] uppercase tracking-widest2 text-ink-500 mb-2">
+              Observación · lote, factura
+            </label>
+            <input
+              className="input font-display text-xl"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Factura, lote, etc…"
+            />
           </div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Productos</h2>
-            <button type="button" onClick={addRow} className="btn-secondary text-xs">+ Linea</button>
+        {/* DETALLE */}
+        <div className="mb-6">
+          <div className="flex items-end justify-between mb-4">
+            <h2 className="font-display text-3xl text-ink leading-none">
+              Detalle <span className="italic text-ember">del ingreso</span>
+            </h2>
+            <button type="button" onClick={addRow} className="btn-secondary">
+              + Línea
+            </button>
           </div>
-          <table className="w-full">
-            <thead className="border-b">
-              <tr>
-                <th className="table-th">Producto</th>
-                <th className="table-th text-right">Cantidad</th>
-                <th className="table-th text-right">Costo unit.</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, idx) => (
-                <tr key={idx} className="border-b last:border-0">
-                  <td className="py-2 pr-2">
-                    <select
-                      className="input"
-                      value={row.productId}
-                      onChange={(e) => updateRow(idx, { productId: e.target.value })}
-                    >
-                      <option value="">Selecciona...</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>{p.sku} — {p.name} (stock {p.stock})</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-2 pr-2">
-                    <input
-                      type="number"
-                      min={1}
-                      className="input text-right"
-                      value={row.quantity}
-                      onChange={(e) => updateRow(idx, { quantity: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      className="input text-right"
-                      value={row.unitPrice}
-                      onChange={(e) => updateRow(idx, { unitPrice: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td className="py-2 text-right">
-                    {rows.length > 1 && (
-                      <button type="button" onClick={() => removeRow(idx)} className="text-red-600 text-xs">X</button>
-                    )}
-                  </td>
+
+          <div className="card-bare overflow-x-auto">
+            <table className="ed-table">
+              <thead>
+                <tr>
+                  <th style={{width:'2.5rem'}}>№</th>
+                  <th>Producto</th>
+                  <th className="text-right" style={{width:'8rem'}}>Cantidad</th>
+                  <th className="text-right" style={{width:'10rem'}}>Costo unit.</th>
+                  <th className="text-right" style={{width:'10rem'}}>Subtotal</th>
+                  <th style={{width:'2rem'}}></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="mono-num text-[10px] text-ink-300">
+                      {String(idx + 1).padStart(2, '0')}
+                    </td>
+                    <td>
+                      <select
+                        className="input"
+                        value={row.productId}
+                        onChange={(e) => updateRow(idx, { productId: e.target.value })}
+                      >
+                        <option value="">— Selecciona —</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>{p.sku} · {p.name} (stock {p.stock})</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min={1}
+                        className="input text-right mono-num font-display text-lg"
+                        value={row.quantity}
+                        onChange={(e) => updateRow(idx, { quantity: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        className="input text-right mono-num"
+                        value={row.unitPrice}
+                        onChange={(e) => updateRow(idx, { unitPrice: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td className="text-right">
+                      <span className="mono-num font-display text-lg text-ink">
+                        <span className="text-xs align-top text-ink-500">S/</span>
+                        {(row.quantity * row.unitPrice).toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="text-right">
+                      {rows.length > 1 && (
+                        <button type="button" onClick={() => removeRow(idx)} className="text-ember text-sm">
+                          ✕
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {error && <div className="card text-sm text-red-700 bg-red-50 border-red-200">{error}</div>}
-        {success && <div className="card text-sm text-emerald-700 bg-emerald-50 border-emerald-200">{success}</div>}
+        {/* TOTALES */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 py-6 border-t border-b border-ink/30">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest2 text-ink-500">Líneas</div>
+            <div className="font-display text-4xl mono-num text-ink mt-1">
+              {String(rows.length).padStart(2, '0')}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-widest2 text-ink-500">Unidades</div>
+            <div className="font-display text-4xl mono-num text-ink mt-1">
+              {totalUnits}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-widest2 text-ink-500">Costo total</div>
+            <div className="font-display text-5xl mono-num text-ember mt-1">
+              <span className="text-lg align-top">S/</span>
+              {totalCost.toFixed(2)}
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-3 py-4 mb-6 border-y border-ember">
+            <span className="stamp-ember mt-0.5">Error</span>
+            <span className="text-sm text-ink leading-snug">{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="flex items-center gap-3 py-4 mb-6 border-y border-moss">
+            <span className="stamp-moss mt-0.5">✓ Asentado</span>
+            <span className="font-display italic text-xl text-ink leading-snug">{success}.</span>
+          </div>
+        )}
 
         <div className="flex justify-end">
-          <button type="submit" className="btn-primary">Registrar ingreso</button>
+          <button type="submit" className="btn-primary">
+            Asentar ingreso →
+          </button>
         </div>
       </form>
     </Shell>
