@@ -3,12 +3,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Shell } from '@/components/Shell';
 import { apiClient } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
   content: string;
 };
+
+const CHAT_STORAGE_KEY_PREFIX = 'sansur.chat.messages.v1';
+const MAX_STORED_MESSAGES = 30;
 
 const SUGGESTIONS = [
   '¿Cuántos productos tenemos en total?',
@@ -18,6 +22,44 @@ const SUGGESTIONS = [
   'Muestra los proveedores registrados',
   '¿Qué movimientos hubo hoy en el kárdex?',
 ];
+
+function readStoredMessages(storageKey: string): Message[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter((message): message is Message => (
+      typeof message?.id === 'number' &&
+      (message.role === 'user' || message.role === 'assistant') &&
+      typeof message.content === 'string'
+    ));
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredMessages(storageKey: string, messages: Message[]) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if (messages.length === 0) {
+      window.localStorage.removeItem(storageKey);
+      return;
+    }
+
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify(messages.slice(-MAX_STORED_MESSAGES))
+    );
+  } catch {
+    // Si el navegador bloquea localStorage, el chat sigue funcionando en memoria.
+  }
+}
 
 function FanMark({ className = '' }: { className?: string }) {
   return (
@@ -35,12 +77,39 @@ function FanMark({ className = '' }: { className?: string }) {
 }
 
 export default function ChatPage() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeStorageKey, setActiveStorageKey] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const nextId = useRef(0);
+  const chatStorageKey = user ? `${CHAT_STORAGE_KEY_PREFIX}:${user.id}` : null;
+
+  useEffect(() => {
+    if (!chatStorageKey) {
+      setMessages([]);
+      setActiveStorageKey(null);
+      nextId.current = 0;
+      return;
+    }
+
+    const storedMessages = readStoredMessages(chatStorageKey);
+    if (storedMessages.length > 0) {
+      setMessages(storedMessages);
+      nextId.current = Math.max(...storedMessages.map((message) => message.id)) + 1;
+    } else {
+      setMessages([]);
+      nextId.current = 0;
+    }
+    setActiveStorageKey(chatStorageKey);
+  }, [chatStorageKey]);
+
+  useEffect(() => {
+    if (!activeStorageKey || activeStorageKey !== chatStorageKey) return;
+    saveStoredMessages(activeStorageKey, messages);
+  }, [messages, activeStorageKey, chatStorageKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,6 +159,13 @@ export default function ChatPage() {
     sendMessage(input);
   }
 
+  function clearChat() {
+    setMessages([]);
+    nextId.current = 0;
+    if (activeStorageKey) saveStoredMessages(activeStorageKey, []);
+    inputRef.current?.focus();
+  }
+
   return (
     <Shell>
       <div className="flex flex-col h-[calc(100vh-14rem)]">
@@ -105,6 +181,17 @@ export default function ChatPage() {
               Pregúntele <span className="italic text-ember">al sistema.</span>
             </h1>
           </div>
+          {messages.length > 0 && (
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={clearChat}
+                className="btn-secondary py-2"
+              >
+                Limpiar conversación
+              </button>
+            </div>
+          )}
         </header>
 
         {/* Chat area */}
